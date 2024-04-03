@@ -11,6 +11,8 @@ import time
 import urllib.request
 
 DEFAULT_REFRESH = 24 * 60 * 60
+ELIMINATE_MOST_COMMON = 75
+SCHEDULE_DATA = "https://data.sfgov.org/api/views/jjew-r69b/rows.csv"
 
 def print_msg(message, **kwargs):
     print(message, file=sys.stderr, **kwargs)
@@ -42,7 +44,7 @@ def frequent_words(wordlist, top):
     return [word for (count, word) in counted_words[0:top]]
 
 if __name__ == '__main__':
-    df = load_dataframe("https://data.sfgov.org/api/views/jjew-r69b/rows.csv", "schedule.csv")
+    df = load_dataframe(SCHEDULE_DATA, "schedule.csv")
     epoch_t = time.time()
     t = time.localtime(epoch_t)
     midnight = int(time.mktime((t.tm_year, t.tm_mon, t.tm_mday, 0, 0, 0, 0, 0, -1)))
