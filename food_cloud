@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from geocoder.location import Location
 
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -30,6 +31,16 @@ def load_dataframe(url, filename, refresh_interval = DEFAULT_REFRESH):
     df = pd.read_csv(path, parse_dates=["starttime","endtime"], date_format="%I%p")
     return df
 
+def frequent_words(wordlist, top):
+    counts = {}
+    for word in wordlist:
+        if word in counts:
+            counts[word] += 1
+        else:
+            counts[word] = 1
+    counted_words = sorted([(count, word) for (word,count) in counts.items()], reverse=True)
+    return [word for (count, word) in counted_words[0:top]]
+
 if __name__ == '__main__':
     df = load_dataframe("https://data.sfgov.org/api/views/jjew-r69b/rows.csv", "schedule.csv")
     epoch_t = time.time()
@@ -37,5 +48,24 @@ if __name__ == '__main__':
     midnight = int(time.mktime((t.tm_year, t.tm_mon, t.tm_mday, 0, 0, 0, 0, 0, -1)))
     nowtime = int(epoch_t- midnight)
     weekday = t.tm_wday
-    print(df[df["DayOrder"] == weekday].head(5))
 
+    stop_words = set(STOPWORDS)
+    all_words = []
+    for truck_foods in df['optionaltext']:
+        try:
+            food_words = re.split("[^\w]+", truck_foods.lower())
+            all_words += [word for word in food_words if word not in stop_words]
+        except:
+            pass
+
+    #it turns out there are a lot of boring words, so lets kill the most frequent ones
+    frequent = set(frequent_words(all_words, top=75))
+    foods = " ".join([word for word in all_words if word not in frequent])
+
+    wordcloud = WordCloud(width=800, height=600, background_color="white").generate(foods)
+
+    plt.figure(figsize=(8, 6))
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis("off")
+    plt.title("Word Cloud from Text Data")
+    plt.show()
